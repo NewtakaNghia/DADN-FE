@@ -25,6 +25,14 @@ export interface TrashLog {
   thrownAt: string;
 }
 
+export interface HealthAdvice {
+  recyclable_count: number;
+  non_recyclable_count: number;
+  ratio: number;
+  level: string;
+  advice: string;
+}
+
 export const api = {
   register: (data: { fullName: string; email: string; password: string }) =>
     request("/api/auth/register", { method: "POST", body: JSON.stringify(data) }),
@@ -37,4 +45,7 @@ export const api = {
 
   getTrashLogs: (limit = 10) =>
     request<{ data: TrashLog[] }>(`/api/trash-logs?limit=${limit}`),
+
+  getHealthAdvie: (limit = 10) =>
+    request<{ data: HealthAdvice }>(`/api/trash-logs/health-advice?limit=${limit}`),
 };

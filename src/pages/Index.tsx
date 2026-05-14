@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { api, TrashLog } from "@/lib/api";
+import { api, HealthAdvice, TrashLog } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Recycle, LogOut, Wifi, WifiOff, Trash2, BarChart3, Clock, Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Recycle, LogOut, Wifi, WifiOff, Trash2, BarChart3, Clock, Filter, X, ChevronLeft, ChevronRight, HeartPulse } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,6 +53,10 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<TrashLog | null>(null);
   const [isOnline] = useState(true);
+  const [healthAdvice, setHealthAdvice] = useState<HealthAdvice | null>(null);
+  const [adviceLoading, setAdviceLoading] = useState(false);
+  const [adviceLimit, setAdviceLimit] = useState<number>(logs.length || 200);
+
 
   // Date-range filter state
   const today = toDateInputValue(new Date());
@@ -113,7 +117,22 @@ const Index = () => {
 
     return true;
   });
+  // ---------- Health Advice ----------
+  const fetchHealthAdvice = async () => {
+    setAdviceLoading(true);
+    try {
+      const res = await api.getHealthAdvie();
+      setHealthAdvice(res.data);
+    } catch (error) {
+      toast({ title: "Lỗi khi lấy lời khuyên", description: error.message, variant: "destructive" });
+    } finally {
+      setAdviceLoading(false);
+    }
+  };
 
+  useEffect(() => {
+    setAdviceLimit(logs.length || 200);
+  }, [logs.length]);
   // ---------- Stats ----------
   const todayStr    = new Date().toDateString();
   const todayLogs   = logs.filter((l) => new Date(l.thrownAt).toDateString() === todayStr);
@@ -290,38 +309,90 @@ const Index = () => {
         {/* Chart + History */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Pie chart */}
-          <Card className="border-0 shadow-sm lg:col-span-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Thống kê loại rác</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%" cy="50%"
-                      innerRadius={50} outerRadius={80}
-                      dataKey="value"
-                      paddingAngle={3}
-                    >
-                      {pieData.map((entry, i) => (
-                        <Cell
-                          key={i}
-                          fill={LABEL_COLORS[entry._key] || `hsl(${i * 90}, 50%, 50%)`}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-10">Chưa có dữ liệu</p>
-              )}
-            </CardContent>
-          </Card>
+          <div className="flex flex-col gap-6 lg:col-span-1">
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Thống kê loại rác</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {pieData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%" cy="50%"
+                        innerRadius={50} outerRadius={80}
+                        dataKey="value"
+                        paddingAngle={3}
+                      >
+                        {pieData.map((entry, i) => (
+                          <Cell
+                            key={i}
+                            fill={LABEL_COLORS[entry._key] || `hsl(${i * 90}, 50%, 50%)`}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-10">Chưa có dữ liệu</p>
+                )}
+              </CardContent>
+            </Card>
+            {/* Health Advice */}
+            <Card className="border-0 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <HeartPulse className="w-4 h-4 text-primary" />
+                  Lời khuyên sức khỏe
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-3 mb-4">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs text-muted-foreground">Số lần vứt để phân tích</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={adviceLimit}
+                      onChange={(e) => setAdviceLimit(Number(e.target.value))}
+                      className="w-full h-9 text-sm"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    className="h-9 gap-1.5"
+                    onClick={fetchHealthAdvice}
+                    disabled={adviceLoading}
+                  >
+                    {adviceLoading
+                      ? <span className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      : <HeartPulse className="w-3.5 h-3.5" />}
+                    Lấy lời khuyên
+                  </Button>
+                </div>
 
+              {healthAdvice ? (
+                <div className="space-y-3">
+                  <Badge
+                    variant="outline"
+                    className="text-sm px-3 py-1"
+                    style={{ borderColor: "hsl(152, 56%, 40%)", color: "hsl(152, 56%, 40%)" }}
+                  >
+                    Mức độ: {healthAdvice.level}
+                  </Badge>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{healthAdvice.advice}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-6">
+                  Bấm <span className="font-medium text-foreground">Lấy lời khuyên</span> để xem gợi ý sức khỏe.
+                </p>
+              )}
+              </CardContent>
+            </Card>
+          </div>
           {/* History list */}
           <Card className="border-0 shadow-sm lg:col-span-2">
             <CardHeader className="pb-2">

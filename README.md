@@ -81,7 +81,7 @@ Smart Bin Frontend là giao diện người dùng web được xây dựng bằn
    npm run dev
    ```
    
-   Ứng dụng sẽ chạy tại `http://localhost:5173`
+   Ứng dụng sẽ chạy tại `http://localhost:8080`
 
 ## 🚀 Sử Dụng
 
@@ -162,6 +162,7 @@ http://localhost:8000
 | `POST` | `/api/auth/register` | Đăng ký tài khoản mới |
 | `POST` | `/api/auth/login` | Đăng nhập |
 | `GET` | `/api/trash-logs` | Lấy danh sách lần thải rác |
+| `GET` | `/api/trash-logs/health-advice` | Lấy lời khuyên sức khỏe dựa trên lượng rác |
 
 ### Authentication
 - Sử dụng JWT tokens
